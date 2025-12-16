@@ -125,6 +125,7 @@ export class Game {
             santa: new Image(),
             tower_cane: new Image(),
             tower_trap: new Image(),
+            tower_snowman: new Image(),
             spike: new Image()
         };
         window.imgs = this.imgs;
@@ -182,6 +183,8 @@ export class Game {
             this.imgs.tower_cane.src = 'assets/tower_cane.png';
             this.imgs.tower_trap.onload = onload;
             this.imgs.tower_trap.src = 'assets/tower_trap.png';
+            this.imgs.tower_snowman.onload = onload;
+            this.imgs.tower_snowman.src = 'assets/tower_snowman.png';
             this.imgs.spike.onload = onload;
             this.imgs.spike.src = 'assets/spike.png';
         });
@@ -254,7 +257,10 @@ export class Game {
     }
 
     tryPlaceTower() {
-        const cost = this.placingTower === 'trap' ? 150 : 50;
+        let cost = 50;
+        if (this.placingTower === 'trap') cost = 150;
+        if (this.placingTower === 'snowman') cost = 250;
+
         if (this.candy < cost) return;
 
         if (this.isCollidingWithPath(this.mouseX, this.mouseY, 25)) return;
@@ -359,7 +365,7 @@ export class Game {
         this.enemies.forEach(e => e.update(dt));
 
         // Towers need projectilesList to spawn projectiles OR Spikes
-        this.towers.forEach(t => t.update(dt, this.enemies, this.projectiles));
+        this.towers.forEach(t => t.update(dt, this.enemies, this.projectiles, this.getAbsoluteWaypoints()));
 
         // Projectiles (and Spikes)
         this.projectiles.forEach(p => {
@@ -478,7 +484,10 @@ export class Game {
             this.ctx.stroke();
 
             let size = 50;
-            let img = this.placingTower === 'trap' ? this.imgs.tower_trap : this.imgs.tower_cane;
+            let img;
+            if (this.placingTower === 'trap') img = this.imgs.tower_trap;
+            else if (this.placingTower === 'snowman') img = this.imgs.tower_snowman;
+            else img = this.imgs.tower_cane;
             if (img) {
                 this.ctx.drawImage(img, this.mouseX - size / 2, this.mouseY - size / 2, size, size);
             }

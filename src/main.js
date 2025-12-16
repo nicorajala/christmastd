@@ -1,5 +1,3 @@
-
-// Main Entry Point
 import { Game } from './game.js';
 
 window.addEventListener('load', () => {

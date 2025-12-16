@@ -111,11 +111,29 @@ export class UIManager {
         // Path 2: Range
         // Path 3: Fire Rate
 
-        const paths = [
-            { id: 0, name: "Sugar Rush (Speed)", cost: 50 * (t.upgrades[0] + 1), stat: "Fire Rate" },
-            { id: 1, name: "Hard Candy (Damage)", cost: 50 * (t.upgrades[1] + 1), stat: "Damage" },
-            { id: 2, name: "Peppermint sight (Range)", cost: 50 * (t.upgrades[2] + 1), stat: "Range" }
-        ];
+        // Define paths based on tower type
+        let paths = [];
+
+        if (t.type === 'trap') {
+            paths = [
+                { id: 0, name: "Deploy Speed", cost: 50 * (t.upgrades[0] + 1), stat: "Fire Rate" },
+                { id: 1, name: "Extra Spikes", cost: 100 * (t.upgrades[1] + 1), stat: "Max Spikes" },
+                { id: 2, name: "Throw Range", cost: 50 * (t.upgrades[2] + 1), stat: "Range" }
+            ];
+        } else if (t.type === 'snowman') {
+            paths = [
+                { id: 0, name: "Reload Speed", cost: 100 * (t.upgrades[0] + 1), stat: "Fire Rate" },
+                { id: 1, name: "Freeze Power (Dmg)", cost: 100 * (t.upgrades[1] + 1), stat: "Damage" },
+                { id: 2, name: "Eagle Eye (Range)", cost: 100 * (t.upgrades[2] + 1), stat: "Range" }
+            ];
+        } else {
+            // Default (Cane)
+            paths = [
+                { id: 0, name: "Sugar Rush (Speed)", cost: 50 * (t.upgrades[0] + 1), stat: "Fire Rate" },
+                { id: 1, name: "Hard Candy (Damage)", cost: 50 * (t.upgrades[1] + 1), stat: "Damage" },
+                { id: 2, name: "Peppermint sight (Range)", cost: 50 * (t.upgrades[2] + 1), stat: "Range" }
+            ];
+        }
 
         paths.forEach(p => {
             const div = document.createElement('div');
@@ -123,21 +141,34 @@ export class UIManager {
 
             // Check locking
             let locked = false;
+            // Upgrade path locking removed - user didn't ask for exclusive paths, just "damage upgrade shouldn't be available on trap guy". 
+            // Wait, previous code had `upgradePath` locking. "The damage upgrade path shouldn't be available...".
+            // User request: "make every towers upgrades specific... make every towers upgrades go to only ten".
+            // Usually TD games allow upgrading dependently. The previous code enforced choosing ONE path: `if (t.upgradePath !== null && t.upgradePath !== p.id) locked = true;`
+            // User didn't explicitly say remove locking, but usually with "level 10 cap" implies linear progression per path. 
+            // I will keep the locking if it was there to respect original design, OR I can remove it if it feels restrictive. 
+            // The user said "damage upgrade path shouldn't be available".
+            // Let's Keep the "One Path Only" mechanic if that was the intent, BUT actually standard BTD6 lets you upgrade multiple paths (usually 2).
+            // The current code forces ONE path. I'll stick to that simple model for now unless requested otherwise, as it simplifies "upgradePath".
+            // Actually, wait. "make every towers upgrades go to only ten". That sounds like standard progression.
+            // Let's KEEP the locking for now to avoid changing core mechanics too much, effectively making them "Specializations".
+
             if (t.upgradePath !== null && t.upgradePath !== p.id) {
                 locked = true;
                 div.classList.add('locked');
             }
 
             const currentLvl = t.upgrades[p.id];
+            const isMaxed = currentLvl >= 10;
 
             div.innerHTML = `
                 <strong>${p.name}</strong><br>
-                Lvl: ${currentLvl}<br>
-                Cost: ${p.cost}
-                <button class="upgrade-btn" ${locked ? 'disabled' : ''}>Upgrade</button>
+                Lvl: ${currentLvl}${isMaxed ? ' (MAX)' : ''}<br>
+                ${isMaxed ? 'Maxed Out' : `Cost: ${p.cost}`}
+                <button class="upgrade-btn" ${locked || isMaxed ? 'disabled' : ''}>${isMaxed ? 'MAX' : 'Upgrade'}</button>
             `;
 
-            if (!locked) {
+            if (!locked && !isMaxed) {
                 const btn = div.querySelector('button');
                 btn.addEventListener('click', () => {
                     this.tryUpgrade(t, p.id, p.cost);
@@ -149,6 +180,8 @@ export class UIManager {
     }
 
     tryUpgrade(tower, pathId, cost) {
+        if (tower.upgrades[pathId] >= 10) return; // Cap
+
         if (this.game.candy >= cost) {
             this.game.candy -= cost;
             tower.totalInvested += cost; // Track investment for sell value
@@ -161,8 +194,17 @@ export class UIManager {
             tower.upgrades[pathId]++;
 
             // Apply Stats
+            // Generic multipliers
             if (pathId === 0) tower.fireRate *= 1.2;
-            if (pathId === 1) tower.damage *= 1.2;
+
+            // Damage (Path 1 for most, but Trap Path 1 is Max Spikes)
+            if (tower.type === 'trap') {
+                if (pathId === 1) tower.maxActiveSpikes += 1;
+            } else {
+                if (pathId === 1) tower.damage *= 1.2;
+            }
+
+            // Range
             if (pathId === 2) tower.range *= 1.15;
 
             this.updateStats();

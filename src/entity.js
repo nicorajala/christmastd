@@ -128,8 +128,10 @@ export class Spike extends Entity {
     constructor(x, y) {
         super(x, y);
         this.radius = 15;
-        this.duration = 10.0; // Despawns after 10s if not used? Or permanent? Let's say 10s.
+        this.duration = 20.0; // Last longer
         this.image = window.imgs.spike;
+        this.maxHealth = 1; // It's one-shot
+        this.health = 1;
     }
 
     update(dt, enemies) {
@@ -141,6 +143,8 @@ export class Spike extends Entity {
 
         // Check collision with ANY enemy
         for (let e of enemies) {
+            if (e.health <= 0) continue; // Skip dead enemies
+
             let dx = e.x - this.x;
             let dy = e.y - this.y;
             let dist = Math.sqrt(dx * dx + dy * dy);
@@ -192,26 +196,44 @@ export class Tower extends Entity {
         this.upgradePath = null;
         this.upgrades = [0, 0, 0];
 
-        this.image = type === 'trap' ? window.imgs.tower_trap : window.imgs.tower_cane;
+        this.image = type === 'trap' ? window.imgs.tower_trap : (type === 'snowman' ? window.imgs.tower_snowman : window.imgs.tower_cane);
+
+        // Trap specific
+        this.activeSpikes = []; // Track spikes created by this tower
+        this.maxActiveSpikes = 3;
+
+        // Snowman (Sniper) specific
+        if (this.type === 'snowman') {
+            this.range = 600;
+            this.damage = 50;
+            this.fireRate = 0.5;
+            this.baseCost = 250;
+            this.totalInvested = 250;
+        }
     }
 
-    update(dt, enemies, projectilesList) {
+    update(dt, enemies, projectilesList, pathPoints) {
         this.cooldown -= dt;
+
+        // Clean up active spikes list
+        if (this.type === 'trap') {
+            this.activeSpikes = this.activeSpikes.filter(s => !s.markedForDeletion);
+        }
 
         if (this.cooldown <= 0) {
             if (this.type === 'trap') {
-                // Trap Logic: Place spike near enemy
-                let target = this.findTarget(enemies);
-                if (target) {
-                    // Place spike at target's FUTURE position? Or current.
-                    // Projectiles list works for spikes too as entities
-                    // But we want spikes to be stationary.
-                    // Add to separate list? Or just generic entity list?
-                    // Game.js passes "projectilesList" which is rendered. 
-                    // Let's add Spike to projectilesList but it behaves differently (stationary).
+                if (pathPoints && this.activeSpikes.length < this.maxActiveSpikes) {
+                    let targetPos = this.findPathTarget(pathPoints);
+                    if (targetPos) {
+                        let newSpike = new Spike(targetPos.x, targetPos.y);
+                        // Add randomness to pile them slightly
+                        newSpike.x += (Math.random() - 0.5) * 20;
+                        newSpike.y += (Math.random() - 0.5) * 20;
 
-                    projectilesList.push(new Spike(target.x, target.y));
-                    this.cooldown = 1 / this.fireRate;
+                        projectilesList.push(newSpike);
+                        this.activeSpikes.push(newSpike);
+                        this.cooldown = 1 / this.fireRate;
+                    }
                 }
             } else {
                 let target = this.findTarget(enemies);
@@ -221,6 +243,71 @@ export class Tower extends Entity {
                 }
             }
         }
+    }
+
+    findPathTarget(pathPoints) {
+        // Find a point on the path that is within range.
+        // We can just check line segments against our circle.
+        // We want a random point on the path within range to "throw" at.
+
+        let validSegments = [];
+
+        for (let i = 0; i < pathPoints.length - 1; i++) {
+            let p1 = pathPoints[i];
+            let p2 = pathPoints[i + 1];
+
+            // Check if this segment intersects with our range
+            // Simplified: check if ends are in range, or some points along it.
+            // Better: find intersection of line segment and circle.
+            // For simplicity/performance: just pick random points on segment and check distance.
+
+            // Or just find the closest point on segment to tower, if `dist < range`, use that area.
+
+            let dx = p2.x - p1.x;
+            let dy = p2.y - p1.y;
+            let len = Math.sqrt(dx * dx + dy * dy);
+
+            // Normalize
+            let nx = dx / len;
+            let ny = dy / len;
+
+            // Project tower onto line
+            let t = ((this.x - p1.x) * nx + (this.y - p1.y) * ny);
+            let closestX, closestY;
+
+            if (t < 0) { closestX = p1.x; closestY = p1.y; }
+            else if (t > len) { closestX = p2.x; closestY = p2.y; }
+            else {
+                closestX = p1.x + t * nx;
+                closestY = p1.y + t * ny;
+            }
+
+            let dist = Math.sqrt((closestX - this.x) ** 2 + (closestY - this.y) ** 2);
+            if (dist <= this.range) {
+                validSegments.push({ p1, p2, len, nx, ny, closestX, closestY, t_closest: t });
+            }
+        }
+
+        if (validSegments.length > 0) {
+            // Pick a random valid segment
+            let seg = validSegments[Math.floor(Math.random() * validSegments.length)];
+
+            // Pick a random point near the closest point on that segment that is within range
+            // Let's just pick a random offset from the closest point, clamped to segment
+            let randomOffset = (Math.random() - 0.5) * 60; // +/- 30 pixels along path
+
+            // Ensure we stay on the segment
+            // We need to re-calculate 't' for the point relative to p1
+            // seg.t_closest is the distance from p1 to closest point
+
+            let t_target = Math.max(0, Math.min(seg.len, seg.t_closest + randomOffset));
+
+            return {
+                x: seg.p1.x + t_target * seg.nx,
+                y: seg.p1.y + t_target * seg.ny
+            };
+        }
+        return null;
     }
 
     findTarget(enemies) {
@@ -236,7 +323,13 @@ export class Tower extends Entity {
     }
 
     shoot(target, projectilesList) {
-        projectilesList.push(new Projectile(this.x, this.y - 10, target, this.damage, 300));
+        let speed = 300;
+        let color = 'white';
+        if (this.type === 'snowman') {
+            speed = 1000;
+            color = 'cyan';
+        }
+        projectilesList.push(new Projectile(this.x, this.y - 10, target, this.damage, speed, color));
     }
 
     getSellValue() {
@@ -259,7 +352,7 @@ export class Tower extends Entity {
             ctx.drawImage(this.image, this.x - size / 2, this.y - size / 2, size, size);
         } else {
             // Fallback
-            ctx.fillStyle = this.type === 'trap' ? '#555' : '#ccc';
+            ctx.fillStyle = this.type === 'trap' ? '#555' : (this.type === 'snowman' ? '#fff' : '#ccc');
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
             ctx.fill();
