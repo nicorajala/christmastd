@@ -1,0 +1,266 @@
+:root {
+    --primary-color: #d42426; /* Christmas Red */
+    --secondary-color: #165b33; /* Christmas Green */
+    --accent-color: #f8b229; /* Gold */
+    --bg-color: #f0f2f5;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --text-color: #1a1a1a;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #2b3a42; /* Dark winter night base */
+    font-family: var(--font-family);
+    color: var(--text-color);
+}
+
+#app {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+canvas {
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    background-color: #fff; /* Fallback */
+}
+
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Let clicks pass through to canvas by default */
+}
+
+/* Enable pointer events for actual UI elements */
+#hud, #controls, #shop-panel, #upgrade-panel, .modal {
+    pointer-events: auto;
+}
+
+#hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    gap: 15px;
+}
+
+.stat-box {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.label {
+    color: #666;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s, filter 0.2s;
+}
+
+.btn:active {
+    transform: scale(0.95);
+}
+
+.btn.primary {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 10px rgba(212, 36, 38, 0.4);
+}
+
+.btn.primary:hover {
+    filter: brightness(1.1);
+}
+
+#shop-panel {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    padding: 15px;
+    border-radius: 16px;
+    display: flex;
+    gap: 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    align-items: center;
+}
+
+#shop-panel h3 {
+    margin: 0 10px 0 0;
+    font-size: 1rem;
+    color: var(--secondary-color);
+    text-transform: uppercase;
+}
+
+.shop-item {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 2px solid transparent;
+}
+
+.shop-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.shop-item.selected {
+    border-color: var(--primary-color);
+    background: #fff5f5;
+}
+
+.shop-item .icon {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+}
+
+.shop-item .info {
+    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.shop-item .cost {
+    color: var(--accent-color);
+    font-weight: bold;
+    text-shadow: 0px 0px 2px rgba(0,0,0,0.5); /* Make text readable on light bg if needed, though here bg is white */
+    color: #d68900;
+}
+
+#upgrade-panel {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    width: 300px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#upgrade-panel.hidden {
+    display: none;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-header h3 {
+    margin: 0;
+    color: var(--secondary-color);
+}
+
+#close-upgrade-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #666;
+}
+
+.upgrade-path {
+    background: rgba(255,255,255,0.6);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.upgrade-path.locked {
+    opacity: 0.5;
+    pointer-events: none;
+    background: #ddd;
+}
+
+.upgrade-btn {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    background: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.upgrade-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    color: white;
+    text-align: center;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal h1 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px var(--primary-color);
+}

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Christmas Tower Defense</title>
+    <link rel="stylesheet" href="src/style.css">
+</head>
+
+<body>
+    <div id="app">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="ui-layer">
+            <div id="hud">
+                <div class="stat-box">
+                    <span class="label">Wave:</span>
+                    <span id="wave-display">1</span>
+                </div>
+                <div class="stat-box">
+                    <span class="label">Candy:</span>
+                    <span id="candy-display">100</span>
+                </div>
+                <div class="stat-box">
+                    <span class="label">Lives:</span>
+                    <span id="lives-display">20</span>
+                </div>
+            </div>
+
+            <div id="controls">
+                <button id="start-wave-btn" class="btn primary">Start Wave</button>
+            </div>
+
+            <div id="shop-panel">
+                <h3>Towers</h3>
+                <div class="shop-item" data-type="cane">
+                    <div class="icon">🦯</div>
+                    <div class="info">
+                        <span class="name">Candy Cane</span>
+                        <span class="cost">50 🍬</span>
+                    </div>
+                </div>
+                <div class="shop-item" data-type="trap">
+                    <div class="icon">📦</div>
+                    <div class="info">
+                        <span class="name">Elf Trap</span>
+                        <span class="cost">150 🍬</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="upgrade-panel" class="hidden">
+                <div class="panel-header">
+                    <h3>Upgrades</h3>
+                    <button id="close-upgrade-btn">✖</button>
+                </div>
+                <div id="upgrade-options">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+
+            <div id="game-over-screen" class="modal hidden">
+                <h1>Game Over!</h1>
+                <button id="restart-btn" class="btn">Try Again</button>
+            </div>
+
+            <div id="victory-screen" class="modal hidden">
+                <h1>You Saved Christmas!</h1>
+                <p>Santa has been defeated!</p>
+                <button id="play-again-btn" class="btn">Play Again</button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="src/main.js"></script>
+</body>
+
+</html>
